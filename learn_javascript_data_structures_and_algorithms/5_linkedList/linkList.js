@@ -100,6 +100,8 @@ const LinkedList = function () {
   }
 }
 
+module.exports = LinkedList
+
 // let list = new LinkedList()
 // list.append(22)
 // list.append(33)
