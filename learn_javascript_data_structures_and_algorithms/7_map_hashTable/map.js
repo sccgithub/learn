@@ -53,3 +53,4 @@ map.print()
 // map.print()
 // map.print()
 // map.print()
+module.exports = Dictionary
