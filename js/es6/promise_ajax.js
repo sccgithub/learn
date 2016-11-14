@@ -1,5 +1,5 @@
 const ajax = function (method, url) {
-  let promise = new Promise((resolve, reject) -> {
+  let promise = new Promise((resolve, reject) => {
     let client = new XMLHttpRequest()
     client.open(method, url)
     client.onreadstatechange = handler
@@ -7,7 +7,7 @@ const ajax = function (method, url) {
     client.setRequestHeader('Accept', 'application/json')
     client.send()
 
-    let handler = () -> {
+    let handler = () => {
       if (this.readyState !== 4) {
         return
       }

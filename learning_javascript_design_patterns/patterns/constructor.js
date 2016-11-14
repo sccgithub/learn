@@ -1,4 +1,4 @@
-let obj = new Object()
+let obj = {}
 Object.defineProperty(obj, 'method', {
   value: function () {
     console.log('==__==')
