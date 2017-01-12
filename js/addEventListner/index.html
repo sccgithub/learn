@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>addEventListener</title>
+</head>
+<style>
+  .outer-box {
+    width: 500px;
+    height: 500px;
+    background: #cdcd3d;
+  }
+
+  .out-box {
+    width: 400px;
+    height: 400px;
+    background: #cacaca;
+  }
+
+  .box {
+    width: 300px;
+    height: 300px;
+    background: #dd2dcd;
+  }
+
+  .inner-box {
+    width: 200px;
+    height: 200px;
+    background: #62c4cd;
+  }
+</style>
+<body>
+  <div class="outer-box">
+    outer-box
+    <div class="out-box">
+      out-box
+      <div class="box">
+        box
+        <div class="inner-box">inner-box</div>
+      </div>
+    </div>
+  </div>
+</body>
+<script>
+  let q = (css) => document.querySelector(css)
+  let outerBox = q('.outer-box')
+  let outBox = q('.out-box')
+  let box = q('.box')
+  let innerBox = q('.inner-box')
+
+  outerBox.addEventListener('click', (event) => {
+    console.log('I\'m outer-box')
+  }, true)
+  outBox.addEventListener('click', (event) => {
+    // event.stopPropagation()
+    console.log('I\'m out-box')
+  }, false)
+  box.addEventListener('click', (event) => {
+    console.log('I\'m box')
+  }, true)
+  innerBox.addEventListener('click', (event) => {
+    // event.stopPropagation()
+    console.log('I\'m inner-box')
+  }, false)
+</script>
+</html>
