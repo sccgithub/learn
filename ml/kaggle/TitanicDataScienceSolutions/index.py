@@ -1,4 +1,8 @@
 # https://www.kaggle.com/startupsci/titanic-data-science-solutions
+# Ignore warnings
+import warnings
+warnings.filterwarnings('ignore')
+
 import pandas as pd
 import numpy as np
 import random as rnd
@@ -310,7 +314,7 @@ models = pd.DataFrame({
             acc_random_forest, acc_gaussian, acc_perceptron, 
             acc_sgd, acc_linear_svc, acc_decision_tree]})
 res = models.sort_values(by='Score', ascending=False)
-# print(res)
+print(res)
 # 随机森林最佳
 
 # 生成结果
