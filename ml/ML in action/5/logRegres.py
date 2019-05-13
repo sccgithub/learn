@@ -95,5 +95,50 @@ def testGrad():
   # weights = gradAscent(dataArr, labelArr)
   weights = stocGradAscent0(array(dataArr), labelArr)
   print(weights)
-testLR() 
+
+
+def classifyVector(inX, weights):
+  prob = sigmoid(sum(inX * weights))
+  if prob > 0.5:
+    return 1.0
+  else:
+    return 0.0
+
+def colicTest():
+  frTrain = open('../AiLearning/data/5.Logistic/HorseColicTraining.txt')
+  frTest = open('../AiLearning/data/5.Logistic/HorseColicTest.txt')
+  trainSet = []
+  trainLabels = []
+  for line in frTrain.readlines():
+    currLine = line.strip().split('\t')
+    lineArr = []
+    for i in range(21):
+      lineArr.append(float(currLine[i]))
+    trainSet.append(lineArr)
+    trainLabels.append(float(currLine[21]))
+  trainWeights = stocGradAscent1(array(trainSet), trainLabels, 500)
+
+  errCount = 0.0
+  numTestVec = 0.0
+  for line in frTest.readlines():
+    numTestVec += 1
+    currLine = line.strip().split('\t')
+    lineArr = []
+    for i in range(21):
+        lineArr.append(float(currLine[i]))
+    if int(classifyVector(array(lineArr), trainWeights)) != int(currLine[21]):
+      errCount += 1
+  errRate = (float(errCount) / numTestVec)
+  print('the error rate of this test is: ', errRate)
+  return errRate
+
+def multiTest():
+  numTest = 10
+  errSum = 0.0
+  for k in range(numTest):
+    errSum += colicTest()
+  print("after %d iterations the average error rate is: %f" % (numTest, errSum/float(numTest)))
+
+multiTest()
+# testLR() 
 # testGrad()
