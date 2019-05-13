@@ -1,5 +1,6 @@
 from numpy import *
 from math import log
+import feedparser
 
 def loadDataSet():
   postingList = [['my', 'dog', 'has', 'flea', 'problems', 'help', 'please'],
@@ -122,7 +123,68 @@ def spamTest():
       errCount += 1
   print('the error rate is :', float(errCount) / len(testSet))
 
-spamTest()
+def calcMostFreq(vocabList, fullText):
+  import operator
+  freqDict = {}
+  for token in vocabList:
+    freqDict[token] = fullText.count(token)
+  sortedFreq = sorted(freqDict.items(), key=operator.itemgetter(1), reverse=True)
+  return sortedFreq[:30]
 
+def localWords(feed1, feed0):
+  docList = []
+  classList = []
+  fullText = []
+  minLen = min(len(feed1['entries']), len(feed0['entries']))
+
+  for i in range(minLen):
+    wordList = textParse(feed1['entries'][i]['summary'])
+    docList.append(wordList)
+    fullText.extend(wordList)
+    classList.append(1)
+
+    wordList = textParse(feed0['entries'][i]['summary'])
+    docList.append(wordList)
+    fullText.extend(wordList)
+    classList.append(0)
+
+  vocavList = createVocabList(docList)
+  top30words = calcMostFreq(vocavList, fullText)
+
+  for pairW in top30words:
+    if pairW[0] in vocavList:
+      vocavList.remove(pairW[0])
+
+  trainingSet = list(range(2 * minLen))
+  testSet = []
+  for i in range(20):
+    randIndex = int(random.uniform(0, len(trainingSet)))
+    testSet.append(trainingSet[randIndex])
+    del(trainingSet[randIndex])
+
+  trainMat = []
+  trainClasses = []
+  for docIndex in trainingSet:
+    trainMat.append(bagOfWords2Vec(vocavList, docList[docIndex]))
+    trainClasses.append(classList[docIndex])
+  p1v, p0v, pSpam = trainNB0(array(trainMat), array(trainClasses))
+
+  errCount = 0
+  for docIndex in testSet:
+    wordVect = bagOfWords2Vec(vocavList, docList[docIndex])
+    if classifyNB(array(wordVect), p0v, p1v, pSpam) != classList[docIndex]:
+      errCount += 1
+  print('the error rate is ', float(errCount) / len(testSet))
+  return vocavList, p0v, p1v
+
+def testLocalWords():
+  ny=feedparser.parse('http://newyork.craigslist.org/stp/index.rss')
+  sy=feedparser.parse('http://sfbay.craigslist.org/stp/index.rss')
+
+  localWords(ny, sy)
+
+testLocalWords()
+
+# spamTest()
 
 # testingNB()
