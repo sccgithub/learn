@@ -1,0 +1,159 @@
+import math
+import random
+
+class NeuralNetwork:
+  LEARNING_RATE = 0.5
+
+  def __init__(self, num_inputs, num_hidden, num_outputs,\
+    hidden_layer_weights=None, hidden_layer_bias=None,\
+      output_layer_weights = None, output_layer_bias = None):
+    self.num_inputs = num_inputs
+    self.hidden_layer = NeuronLayer(num_hidden, hidden_layer_bias)
+    self.output_layer = NeuronLayer(num_outputs, output_layer_bias)
+    self.init_weights_from_inputs_to_hidden_layer_neurons(hidden_layer_weights)
+    self.init_weights_from_hidden_layer_neurons_to_output_layer_neurons(output_layer_weights)
+
+  # 为每个隐藏层神经元配置权重w
+  def init_weights_from_inputs_to_hidden_layer_neurons(self, hidden_layer_weights):
+    weight_num = 0
+    for h in range(len(self.hidden_layer.neurons)):
+      for i in range(self.num_inputs):
+        if not hidden_layer_weights:
+          self.hidden_layer.neurons[h].weights.append(random.random())
+        else:
+          self.hidden_layer.neurons[h].weights.append(hidden_layer_weights[weight_num])
+        weight_num += 1
+  # 为每个输出层神经元配置权重w
+  def init_weights_from_hidden_layer_neurons_to_output_layer_neurons(self, output_layer_weights):
+    weight_num = 0
+    for o in range(len(self.output_layer.neurons)):
+      for h in range(len(self.hidden_layer.neurons)):
+        if not output_layer_weights:
+          self.output_layer.neurons[o].weights.append(random.random())
+        else:
+          self.output_layer.neurons[o].weights.append(output_layer_weights[weight_num])
+        weight_num += 1
+
+  def inspect(self):
+        print('------')
+        print('* Inputs: {}'.format(self.num_inputs))
+        print('------')
+        print('Hidden Layer')
+        self.hidden_layer.inspect()
+        print('------')
+        print('* Output Layer')
+        self.output_layer.inspect()
+        print('------')
+
+  def feed_forward(self, inputs):
+    hidden_layer_outputs = self.hidden_layer.feed_forward(inputs)
+    return self.output_layer.feed_forward(hidden_layer_outputs)
+
+  def train(self, train_inputs, train_outputs):
+    self.feed_forward(train_inputs)
+    # 1. 输出神经元的值
+    pd_errors_wrt_output_neuron_total_net_input = [0] * len(self.output_layer.neurons)
+    for o in range(len(self.output_layer.neurons)):
+      # ∂E/∂zⱼ
+      pd_errors_wrt_output_neuron_total_net_input[o] =\
+        self.output_layer.neurons[o].calculate_pd_error_wrt_total_net_input(train_outputs[o])
+        
+    # 2. 隐含层神经元的值
+    pd_errors_wrt_hidden_neuron_total_net_input = [0] * len(self.hidden_layer.neurons)
+    for h in range(len(self.hidden_layer.neurons)):
+      # dE/dyⱼ = Σ ∂E/∂zⱼ * ∂z/∂yⱼ = Σ ∂E/∂zⱼ * wᵢⱼ
+      d_error_wrt_hidden_neuron_output = 0
+      for o in range(len(self.output_layer.neurons)):
+        d_error_wrt_hidden_neuron_output += pd_errors_wrt_output_neuron_total_net_input[0] *\
+          self.output_layer.neurons[o].weights[h]
+      # ∂E/∂zⱼ = dE/dyⱼ * ∂zⱼ/∂
+      pd_errors_wrt_hidden_neuron_total_net_input[h] = d_error_wrt_hidden_neuron_output *\
+        self.hidden_layer.neurons[h].calculate_pd_total_net_input_wrt_input()
+    # 3. 更新输出层权重系数
+    for o in range(len(self.output_layer.neurons)):
+      for w_ho in range(len(self.output_layer.neurons[o].weights)):
+        # ∂Eⱼ/∂wᵢⱼ = ∂E/∂zⱼ * ∂zⱼ/∂wᵢⱼ
+        pd_error_wrt_weight = pd_errors_wrt_hidden_neuron_total_net_input[o] *\
+          self.output_layer.neurons[o].calculate_pd_total_net_input_wrt_weight(w_ho)
+        # Δw = α * ∂Eⱼ/∂wᵢ
+        self.output_layer.neurons[o].weights[w_ho] -= self.LEARNING_RATE * pd_error_wrt_weight
+    # 4. 更新隐含层的权重系数
+    for h in range(len(self.hidden_layer.neurons)):
+      for w_ih in range(len(self.hidden_layer.neurons[h].weights)):
+        # ∂Eⱼ/∂wᵢ = ∂E/∂zⱼ * ∂zⱼ/∂wᵢ
+        pd_error_wrt_weight = pd_errors_wrt_hidden_neuron_total_net_input[h] *\
+          self.hidden_layer.neurons[h].calculate_pd_total_net_input_wrt_weight(w_ih)
+        # Δw = α * ∂Eⱼ/∂wᵢ
+        self.hidden_layer.neurons[h].weights[w_ih] -= self.LEARNING_RATE * pd_error_wrt_weight
+
+  def calculate_total_error(self, train_set):
+    total_err = 0
+    for t in range(len(train_set)):
+      train_inputs, train_outputs = train_set[t]
+      self.feed_forward(train_inputs)
+      for o in range(len(train_outputs)):
+        total_err += self.output_layer.neurons[o].calculate_error(train_outputs[o])
+    return total_err
+
+# 层
+class NeuronLayer:
+  def __init__(self, num_neurons, bias):
+    # 同一层的神经元共享一个截距项b
+    self.bias = bias if bias else random.random()
+    self.neurons = []
+    for i in range(num_neurons):
+      self.neurons.append(Neuron(self.bias))
+
+  def feed_forward(self, inputs):
+    outputs = []
+    for neuron in self.neurons:
+      outputs.append(neuron.calculate_output(inputs))
+    return outputs
+
+
+# 神经元
+class Neuron:
+  def __init__(self, bias):
+    self.bias = bias
+    self.weights = []
+  
+  # 计算输出
+  def calculate_output(self, inputs):
+    self.inputs = inputs
+    self.output = self.squash(self.calculate_total_net_input())
+    return self.output
+  
+  # 激活函数sigmoid
+  def squash(self, total_net_input):
+    return 1 / (1 + math.exp(-total_net_input))
+
+  # 计算y = wx + b
+  def calculate_total_net_input(self):
+    total = 0
+    for i in range(len(self.inputs)):
+      total += self.inputs[i] * self.weights[i]
+    return total + self.bias
+
+  def calculate_pd_error_wrt_total_net_input(self, target_output):
+    return self.calculate_pd_error_wrt_output(target_output) *\
+      self.calculate_pd_total_net_input_wrt_input()
+
+  # 每一个神经元的误差是由平方差公式计算的
+  def calculate_error(self, target_output):
+      return 0.5 * (target_output - self.output) ** 2
+
+  def calculate_pd_error_wrt_output(self, target_output):
+    return -(target_output - self.output)
+  
+  def calculate_pd_total_net_input_wrt_input(self):
+        return self.output * (1 - self.output)
+
+  def calculate_pd_total_net_input_wrt_weight(self, index):
+    return self.inputs[index]
+
+nn = NeuralNetwork(2, 2, 2, hidden_layer_weights=[0.15, 0.2, 0.25, 0.3],\
+  hidden_layer_bias=0.35, output_layer_weights=[0.4, 0.45, 0.5, 0.55],\
+    output_layer_bias=0.6)
+for i in range(100):
+  nn.train([0.05, 0.1], [0.01, 0.09])
+  print(i, round(nn.calculate_total_error([[[0.05, 0.1], [0.01, 0.09]]]), 9))
